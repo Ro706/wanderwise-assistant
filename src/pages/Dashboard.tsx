@@ -7,6 +7,7 @@ import ChatInterface from '@/components/dashboard/ChatInterface';
 import CustomerList from '@/components/dashboard/CustomerList';
 import ConversationList from '@/components/dashboard/ConversationList';
 import ItineraryList from '@/components/dashboard/ItineraryList';
+import MessageTemplates from '@/components/dashboard/MessageTemplates';
 import { Loader2 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -58,6 +59,12 @@ const Dashboard = () => {
         );
       case 'itineraries':
         return <ItineraryList />;
+      case 'templates':
+        return (
+          <div className="h-full p-6">
+            <MessageTemplates agentName={user?.email?.split('@')[0] || 'Agent'} />
+          </div>
+        );
       case 'chat':
       default:
         return (
