@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,8 @@ import {
   Settings, 
   LogOut,
   Plus,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -37,6 +37,7 @@ const Sidebar = ({ activeSection, setActiveSection, onNewChat }: SidebarProps) =
     { id: 'customers', label: t('customers'), icon: Users },
     { id: 'conversations', label: t('conversations'), icon: MessageSquare },
     { id: 'itineraries', label: t('itineraries'), icon: Map },
+    { id: 'templates', label: 'Templates', icon: FileText },
   ];
 
   return (
