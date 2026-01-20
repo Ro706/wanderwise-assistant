@@ -23,7 +23,7 @@ const LanguageSelect = () => {
 
   const handleContinue = () => {
     setLanguage(selectedLang);
-    navigate('/dashboard');
+    navigate('/travel-mode');
   };
 
   const groupedLanguages = filteredLanguages.reduce((acc, lang) => {

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTravelMode } from '@/contexts/TravelModeContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -15,7 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Send, Loader2, Bot, User, Sparkles, Save, UserPlus } from 'lucide-react';
+import { Send, Loader2, Bot, User, Sparkles, Save, UserPlus, Bus, Train, Plane, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ItineraryCard from './ItineraryCard';
 import TradeoffSlider from './TradeoffSlider';
@@ -25,24 +26,48 @@ import { toast } from 'sonner';
 import { ChatMessage, useConversations } from '@/hooks/useConversations';
 import { useItineraries } from '@/hooks/useItineraries';
 import { useCustomers } from '@/hooks/useCustomers';
+import { cacheItem, getCachedItem } from '@/hooks/useOfflineCache';
 
 interface ChatInterfaceProps {
   conversationId: string | null;
   onConversationCreated?: (id: string) => void;
 }
 
+const travelModeLabels = {
+  bus: { name: 'Bus', icon: Bus, color: 'text-green-500' },
+  train: { name: 'Train', icon: Train, color: 'text-blue-500' },
+  plane: { name: 'Plane', icon: Plane, color: 'text-purple-500' },
+};
+
 const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceProps) => {
   const { t, language } = useLanguage();
+  const { travelMode } = useTravelMode();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [tradeoff, setTradeoff] = useState(50);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { createConversation, updateConversation, getConversation } = useConversations();
   const { saveItinerary } = useItineraries();
   const { customers } = useCustomers();
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(conversationId);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+
+  // Monitor online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const modeInfo = travelMode ? travelModeLabels[travelMode] : null;
+  const ModeIcon = modeInfo?.icon || Plane;
 
   // Load existing conversation messages
   useEffect(() => {
@@ -102,6 +127,25 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       }
     }
 
+    // Check if offline
+    if (isOffline) {
+      toast.error('You are offline. AI responses are not available.');
+      // Load cached response if available
+      const cachedResponse = getCachedItem<string>(`last_response_${convId}`);
+      if (cachedResponse) {
+        const fallbackMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `[Offline Mode] Here's your last cached response:\n\n${cachedResponse}`,
+          showTradeoff: false,
+        };
+        const updatedMessages = [...newMessages, fallbackMessage];
+        setMessages(updatedMessages);
+      }
+      setIsLoading(false);
+      return;
+    }
+
     try {
       // Call the edge function for AI response
       const { data, error } = await supabase.functions.invoke('travel-chat', {
@@ -109,12 +153,18 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           messages: newMessages.map(m => ({ role: m.role, content: m.content })),
           language,
           tradeoffPreference: tradeoff,
+          travelMode: travelMode,
         },
       });
 
       if (error) throw error;
 
-      // Generate mock itineraries to display
+      // Cache the response for offline use
+      if (data.message) {
+        cacheItem(`last_response_${convId}`, data.message);
+      }
+
+      // Generate mock itineraries filtered by travel mode
       const itineraries = generateItineraries(2);
       
       const assistantMessage: ChatMessage = {
@@ -181,13 +231,28 @@ You can use the preference slider below to adjust the recommendations based on w
           </div>
           <div>
             <h2 className="font-semibold text-foreground">Travel Copilot</h2>
-            <p className="text-xs text-muted-foreground">AI-powered travel planning</p>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>AI-powered travel planning</span>
+              {modeInfo && (
+                <span className={cn("flex items-center gap-1", modeInfo.color)}>
+                  <ModeIcon className="w-3 h-3" />
+                  {modeInfo.name} mode
+                </span>
+              )}
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/10 text-success text-sm">
-          <Sparkles className="w-4 h-4" />
-          <span>Online</span>
-        </div>
+        {isOffline ? (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-destructive/10 text-destructive text-sm">
+            <WifiOff className="w-4 h-4" />
+            <span>Offline</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/10 text-success text-sm">
+            <Sparkles className="w-4 h-4" />
+            <span>Online</span>
+          </div>
+        )}
       </div>
 
       {/* Messages Area */}

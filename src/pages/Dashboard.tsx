@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTravelMode } from '@/contexts/TravelModeContext';
 import Sidebar from '@/components/dashboard/Sidebar';
 import ChatInterface from '@/components/dashboard/ChatInterface';
 import CustomerList from '@/components/dashboard/CustomerList';
@@ -14,6 +15,7 @@ import { Loader2 } from 'lucide-react';
 const Dashboard = () => {
   const { user, loading } = useAuth();
   const { hasSelectedLanguage } = useLanguage();
+  const { hasSelectedMode } = useTravelMode();
   const [activeSection, setActiveSection] = useState('chat');
   const [conversationId, setConversationId] = useState<string | null>(null);
 
@@ -40,6 +42,10 @@ const Dashboard = () => {
 
   if (!hasSelectedLanguage) {
     return <Navigate to="/language" replace />;
+  }
+
+  if (!hasSelectedMode) {
+    return <Navigate to="/travel-mode" replace />;
   }
 
   const handleNewChat = () => {
