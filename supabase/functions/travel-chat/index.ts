@@ -8,36 +8,47 @@ const corsHeaders = {
 
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
+const travelModeDescriptions = {
+  bus: "Bus travel - focus on bus tickets, bus routes, bus operators, and road travel options. Do NOT suggest flights or train tickets.",
+  train: "Train travel - focus on train tickets, railway routes, train classes, and rail travel options. Do NOT suggest flights or bus tickets.",
+  plane: "Air travel - focus on flight tickets, airlines, airports, and air travel options. Do NOT suggest trains or bus tickets.",
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { messages, language, tradeoffPreference } = await req.json();
+    const { messages, language, tradeoffPreference, travelMode } = await req.json();
+
+    const modeRestriction = travelMode && travelModeDescriptions[travelMode as keyof typeof travelModeDescriptions]
+      ? `\n\nIMPORTANT TRAVEL MODE RESTRICTION: The user has selected ${travelMode.toUpperCase()} as their preferred travel mode. ${travelModeDescriptions[travelMode as keyof typeof travelModeDescriptions]}\n\nALL your travel recommendations MUST be for ${travelMode} only. If the user asks about other travel modes, politely remind them their current mode is set to ${travelMode} and provide ${travelMode} options instead.`
+      : '';
 
     const systemPrompt = `You are an AI Travel Copilot assistant for travel agents. You help agents plan travel itineraries for their customers.
 
 Language: Respond in ${language || 'English'}. Adapt your responses to be culturally appropriate.
 
 Current preference setting: ${tradeoffPreference || 50}% (0 = Budget focused, 50 = Balanced, 100 = Comfort focused)
+${modeRestriction}
 
 Your capabilities:
 1. Understand travel requirements (destinations, dates, number of travelers, special needs)
 2. Suggest optimized travel options based on the preference slider
 3. Explain WHY you recommend each option (price advantage, comfort score, safety)
-4. Flag risks (short layovers, red-eye flights, visa requirements)
+4. Flag risks (short layovers, red-eye travel, visa requirements)
 5. Remember customer preferences mentioned in the conversation
 
 When generating recommendations:
 - Always provide 3 options: Budget, Balanced, and Comfort
-- Include flight and hotel details with pricing in Indian Rupees (₹)
+- Include ${travelMode || 'transport'} details with pricing in Indian Rupees (₹)
 - Add explainability markers for each recommendation
 - Flag any travel risks or concerns
 - Consider senior citizens, families, or special requirements mentioned
 
-Format your itinerary responses with clear sections:
-- Flight options with times, airlines, and prices
+Format your responses with clear sections:
+- ${travelMode === 'bus' ? 'Bus options with operators, timings, and prices' : travelMode === 'train' ? 'Train options with classes, timings, and prices' : 'Flight options with times, airlines, and prices'}
 - Hotel recommendations with ratings and amenities
 - Total cost breakdown
 - Recommendations based on the current preference setting

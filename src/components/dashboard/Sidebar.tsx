@@ -117,7 +117,7 @@ const Sidebar = ({ activeSection, setActiveSection, onNewChat }: SidebarProps) =
             variant="ghost"
             size="sm"
             className="flex-1 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
-            onClick={() => navigate('/language')}
+            onClick={() => navigate('/settings')}
           >
             <Settings className="w-4 h-4" />
           </Button>
