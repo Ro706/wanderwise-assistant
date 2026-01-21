@@ -16,12 +16,9 @@ import {
   ChevronDown,
   CheckCircle2,
   Sparkles,
-  Copy,
-  UtensilsCrossed,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Itinerary } from '@/lib/mockData';
-import { toast } from 'sonner';
 
 interface ItineraryCardProps {
   itinerary: Itinerary;
@@ -71,65 +68,6 @@ const ItineraryCard = ({ itinerary }: ItineraryCardProps) => {
       default:
         return t('priceStable');
     }
-  };
-
-  const getBookingUrl = () => {
-    const from = itinerary.flight.departure.city.toLowerCase();
-    const to = itinerary.flight.arrival.city.toLowerCase();
-    const date = itinerary.flight.departure.date;
-    const city = itinerary.hotel.city.toLowerCase().replace(/\s+/g, '-');
-    
-    // Generate booking URLs for popular Indian travel platforms
-    const bookingUrls = {
-      flight: `https://www.makemytrip.com/flight/search?itinerary=${from}-${to}-${date}&tripType=O&paxType=A-1_C-0_I-0&cabinClass=E`,
-      hotel: `https://www.booking.com/searchresults.html?ss=${itinerary.hotel.city}`,
-      restaurant: `https://www.zomato.com/${city}/restaurants`,
-      dineout: `https://www.swiggy.com/dineout/${city}`,
-    };
-    
-    return bookingUrls;
-  };
-
-  const handleBookNow = () => {
-    const urls = getBookingUrl();
-    // Open flight booking in new tab
-    window.open(urls.flight, '_blank', 'noopener,noreferrer');
-    toast.success('Opening booking website...');
-  };
-
-  const handleBookHotel = () => {
-    const urls = getBookingUrl();
-    window.open(urls.hotel, '_blank', 'noopener,noreferrer');
-    toast.success('Opening hotel booking website...');
-  };
-
-  const handleBookRestaurant = () => {
-    const urls = getBookingUrl();
-    window.open(urls.restaurant, '_blank', 'noopener,noreferrer');
-    toast.success('Opening restaurant booking website...');
-  };
-
-  const handleGenerateMessage = () => {
-    const message = `Dear Customer,
-
-I'm pleased to share the ${config.label} travel package for your upcoming trip:
-
-✈️ Flight: ${itinerary.flight.airline} ${itinerary.flight.flightNo}
-   ${itinerary.flight.departure.city} → ${itinerary.flight.arrival.city}
-   Departure: ${itinerary.flight.departure.time}
-
-🏨 Hotel: ${itinerary.hotel.name} (${itinerary.hotel.rating}⭐)
-   Room: ${itinerary.hotel.roomType}
-
-💰 Total Cost: ₹${itinerary.totalCost.toLocaleString()}
-
-Please let me know if you'd like to proceed with this booking.
-
-Best regards,
-Your Travel Agent`;
-
-    navigator.clipboard.writeText(message);
-    toast.success('Message copied to clipboard!');
   };
 
   return (
@@ -277,52 +215,6 @@ Your Travel Agent`;
             </div>
           </CollapsibleContent>
         </Collapsible>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col gap-2 pt-2">
-          <div className="flex gap-2">
-            <Button
-              className={cn(
-                "flex-1 font-medium text-xs sm:text-sm",
-                itinerary.priceTrend === 'dropping' 
-                  ? "gradient-primary text-primary-foreground" 
-                  : "bg-foreground text-background hover:bg-foreground/90"
-              )}
-              onClick={itinerary.priceTrend === 'dropping' ? undefined : handleBookNow}
-            >
-              <Plane className="w-4 h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">{itinerary.priceTrend === 'dropping' ? t('waitForBetterPrice') : t('bookNow')}</span>
-              <span className="sm:hidden">Flight</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="flex-1 text-xs sm:text-sm"
-              onClick={handleBookHotel}
-            >
-              <Hotel className="w-4 h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Book Hotel</span>
-              <span className="sm:hidden">Hotel</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="flex-1 text-xs sm:text-sm"
-              onClick={handleBookRestaurant}
-            >
-              <UtensilsCrossed className="w-4 h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Book Restaurant</span>
-              <span className="sm:hidden">Dine</span>
-            </Button>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleGenerateMessage}
-            className="w-full"
-          >
-            <Copy className="w-4 h-4 mr-2" />
-            {t('generateMessage')}
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );
